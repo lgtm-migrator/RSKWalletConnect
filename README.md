@@ -1,6 +1,10 @@
-# RSK Wallet Connect
-
-This is a demo of how to correctly use Wallet Connect with RSK networks (mainnet or testnet)
+<p align="middle">
+    <img src="https://www.rifos.org/assets/img/logo.svg" alt="logo" height="100" >
+</p>
+<h3 align="middle">RSK <> Wallet Connect</h3>
+<p align="middle">
+    A demo of how to correctly use Wallet Connect with RSK networks (mainnet or testnet)
+</p>
 
 Features:
 - Use RSK Mainnet or Testnet
