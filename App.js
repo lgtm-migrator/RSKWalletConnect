@@ -124,9 +124,9 @@ const App: () => React$Node = () => {
       )
     });
 
-    connector.on("call_request", async (error, payload) => {
-      console.log("EVENT", "call_request", "method", payload.method);
-      console.log("EVENT", "call_request", "params", payload.params);
+    connector.on("call_request", async (error, { method, params, id}) => {
+      console.log("EVENT", "call_request", "method", method);
+      console.log("EVENT", "call_request", "params", params);
 
       if (error) {
         throw error;
@@ -142,9 +142,33 @@ const App: () => React$Node = () => {
             "My email is john@doe.com - 1537836206101"
           ]
         }
-        */
+      */
 
-      await onCallRequest(payload);
+      const chosenDid = did0.address.toLowerCase() === params[0].toLowerCase()
+        ? did0 : did1.address.toLowerCase() === params[0].toLowerCase()
+          ? did1 : null
+
+      if (!chosenDid) throw new Error('Invalid persona')
+
+      Alert.alert(
+        "Signature request",
+        `Id: ${id} - Method: ${method} - Params: ${params}`,
+        [
+          {
+            text: "OK", onPress: () => {
+              // this approach is wrong, is just an example. the expected output of eth_sign is a signature
+              // on the message without JWT wrapping
+              chosenDid.signJWT(params[1], 1000)
+              .then(result => connector.approveRequest({
+                id,
+                result,
+              }))
+            }
+          },
+          { text: "Deny access", onPress: () => connector.rejectRequest({ id }) }
+        ],
+        { cancelable: true }
+      )
     });
 
     connector.on("disconnect", (error, payload) => {
