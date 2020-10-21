@@ -36,11 +36,11 @@ const App: () => React$Node = () => {
 
   // wallet connect connection state
   const [showScanner, setShowScanner] = useState(false)
-  const [wcUri, setWCUri] = useState('')
   const [connectedWC, setConnectedWC] = useState(false)
   const [wcError, setWcError] = useState(null)
 
-  // storing the wallet connect connector. this is used to approve and update sessions
+  // storing the wc connection result
+  const [wcUri, setWCUri] = useState('')
   const [peerMeta, setPeerMeta] = useState(null)
 
   // hd wallet creation
@@ -56,20 +56,18 @@ const App: () => React$Node = () => {
   const handleNetworkChange = (network) => {
     setNetwork(network)
     setDIDs(network)
+  
+    // connect web3 provider to new network, then update wc session
   }
 
-  // handle scanning the qr code. this will trigger connectWC function passing some handlers
-  // the result of connectWC is the connector. this sets it on the state, and the uses it
-  // to handle session request.
-  // the other handlers are not implemented yet, but i comment what should be done there
   const handleScan = (uri) => {
     setShowScanner(false)
     setWCUri(uri)
 
+    // create WC connection, this will stablish connectin with the bridge
     const connector = new WalletConnect({ uri });
 
-
-
+    // handle session requests
     connector.on("session_request", (error, payload) => {
       // this is received when the connection with the dapp is stablished
       console.log("EVENT", "session_request", payload);
@@ -124,6 +122,7 @@ const App: () => React$Node = () => {
       )
     });
 
+    // handle call requests, supported methods: https://docs.walletconnect.org/json-rpc-api-methods/ethereum
     connector.on("call_request", async (error, { method, params, id}) => {
       console.log("EVENT", "call_request", "method", method);
       console.log("EVENT", "call_request", "params", params);
@@ -171,6 +170,7 @@ const App: () => React$Node = () => {
       )
     });
 
+    // handle dapp disconnection
     connector.on("disconnect", (error, payload) => {
       console.log("EVENT", "disconnect");
 
@@ -183,6 +183,9 @@ const App: () => React$Node = () => {
       // Delete connector
     });
 
+    // accept the session, lets dapp stablish connection
+    // when using more complex state a session imght be already craeted,
+    // use connector.connected to check if there's a stablished connection
     return connector.createSession()
   }
 
