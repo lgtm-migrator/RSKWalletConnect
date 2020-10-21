@@ -14,7 +14,6 @@ import { generateMnemonic, mnemonicToSeedSync, seedToRSKHDKey } from '@rsksmart/
 import { rskDIDFromPrivateKey as rskMainnetDIDFromPrivateKey, rskTestnetDIDFromPrivateKey } from '@rsksmart/rif-id-ethr-did';
 import { ScanScreen } from './QRScanner'
 import WalletConnect from "@walletconnect/client";
-//import { connectToWC } from './walletConnect'
 import { Alert } from "react-native";
 
 // seed creation
