@@ -105,7 +105,7 @@ const App: () => React$Node = () => {
               // to the dapp
               connector.approveSession({
                 chainId: network,
-                accounts: [did0.address, did1.address],
+                accounts: [did0.address.toLowerCase(), did1.address.toLowerCase()],
                 activeIndex: selectedDid
               })
 
@@ -144,31 +144,58 @@ const App: () => React$Node = () => {
         }
       */
 
-      const chosenDid = did0.address.toLowerCase() === params[0].toLowerCase()
-        ? did0 : did1.address.toLowerCase() === params[0].toLowerCase()
-          ? did1 : null
+      let address
+      if (method === 'eth_sendTransaction') { address = params[0].from }
+      else if (method === 'eth_sign') { address = params[0] }
+      else throw new Error('Method not implemented (yet)')
+      address = address.toLowerCase()
 
-      if (!chosenDid) throw new Error('Invalid persona')
+      let chosenDid
+      if (address === did0.address.toLowerCase()) { chosenDid = did0 }
+      else if (address === did1.address.toLowerCase()) { chosenDid = did1 }
+      else throw new Error('Invalid persona :(')
 
-      Alert.alert(
-        "Signature request",
-        `Id: ${id} - Method: ${method} - Params: ${params}`,
-        [
-          {
-            text: "OK", onPress: () => {
-              // this approach is wrong, is just an example. the expected output of eth_sign is a signature
-              // on the message without JWT wrapping
-              chosenDid.signJWT(params[1], 1000)
-              .then(result => connector.approveRequest({
-                id,
-                result,
-              }))
-            }
-          },
-          { text: "Deny access", onPress: () => connector.rejectRequest({ id }) }
-        ],
-        { cancelable: true }
-      )
+      if (method === 'eth_sign') {
+        Alert.alert(
+          "Signature request",
+          `Id: ${id} - Method: ${method} - Params: ${params}`,
+          [
+            {
+              text: "OK", onPress: () => {
+                // this approach is wrong, is just an example. the expected output of eth_sign is a signature
+                // on the message without JWT wrapping
+                chosenDid.signJWT(params[1], 1000)
+                .then(result => connector.approveRequest({
+                  id,
+                  result,
+                }))
+              }
+            },
+            { text: "Deny access", onPress: () => connector.rejectRequest({ id }) }
+          ],
+          { cancelable: true }
+        )
+      } else if (method === 'eth_sendTransaction') {
+        Alert.alert(
+          "Transaction request",
+          `Id: ${id} - Method: ${method} - Params: ${params}`,
+          [
+            {
+              text: "OK", onPress: () => {
+                // send transaction to the blockchain. as we are now using
+                // always random accounts, none of them will have balance. i will
+                // mock a transaction sent. the return value is a tx hash
+                connector.approveRequest({
+                  id,
+                  result: '0x9b9eaa5043e878861c0d1c8184152311b25f5db64b1da179e383e6df332ae28b',
+                })
+              }
+            },
+            { text: "Deny access", onPress: () => connector.rejectRequest({ id }) }
+          ],
+          { cancelable: true }
+        )
+      }
     });
 
     connector.on("disconnect", (error, payload) => {
