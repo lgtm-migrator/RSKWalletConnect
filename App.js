@@ -39,24 +39,39 @@ const App: () => React$Node = () => {
   const [wcUri, setWCUri] = useState('')
   const [connectedWC, setConnectedWC] = useState(false)
   const [wcError, setWcError] = useState(null)
+  const [connector, setConnector] = useState(connector)
 
   // storing the wallet connect connector. this is used to approve and update sessions
   const [peerMeta, setPeerMeta] = useState(null)
 
-  // hd wallet creation
-  const privateKey0 = hdKey.derive(0).privateKey?.toString('hex')
-  const privateKey1 = hdKey.derive(1).privateKey?.toString('hex')
-  let [did0, did1] = getDIDs(network, [privateKey0, privateKey1])
+  // hd wallet creation - (adding network just to make account change :S)
+  const [privateKey0, setPrivateKey0] = useState(hdKey.derive(0 + 2*network).privateKey?.toString('hex'))
+  const [privateKey1, setPrivateKey1] = useState(hdKey.derive(1 + 2*network).privateKey?.toString('hex'))
 
-  const setDIDs = (network) => {
-    // trigger getDIDs and update state, then, update wc session
+  const getPersonas = (network, privateKeys) => getDIDs(network, privateKeys)
+  const getAddresses = (network, privateKeys) => getPersonas(network, privateKeys).map(did => did.address.toLowerCase())
+
+  const updateSession = (chainId, selectedDID) => {
+    const privateKeys = [
+      hdKey.derive(0 + 2*network).privateKey?.toString('hex'),
+      hdKey.derive(1 + 2*network).privateKey?.toString('hex')
+    ]
+
+    const session = {
+      chainId,
+      accounts: getAddresses(network, privateKeys)
+    }
+
+    console.log('update session', session)
+
+    connector.updateSession(session)
+    setSelectedDid(selectedDID)
+    setNetwork(chainId)
+    setPrivateKey0(privateKeys[0])
+    setPrivateKey1(privateKeys[1])
   }
 
-  // does nothing yet...
-  const handleNetworkChange = (network) => {
-    setNetwork(network)
-    setDIDs(network)
-  }
+  let [did0, did1] = getPersonas(network, [privateKey0, privateKey1])
 
   // handle scanning the qr code. this will trigger connectWC function passing some handlers
   // the result of connectWC is the connector. this sets it on the state, and the uses it
@@ -67,8 +82,6 @@ const App: () => React$Node = () => {
     setWCUri(uri)
 
     const connector = new WalletConnect({ uri });
-
-
 
     connector.on("session_request", (error, payload) => {
       // this is received when the connection with the dapp is stablished
@@ -210,7 +223,7 @@ const App: () => React$Node = () => {
       // Delete connector
     });
 
-    return connector.createSession()
+    return connector.createSession().then(() => setConnector(connector))
   }
 
   return (
@@ -235,7 +248,7 @@ const App: () => React$Node = () => {
                 <View style={styles.sectionContainer}>
                   <Picker
                     selectedValue={network}
-                    onValueChange={(itemValue, itemIndex) => handleNetworkChange(itemValue)}
+                    onValueChange={(itemValue, itemIndex) => updateSession(itemValue, selectedDid)}
                   >
                     <Picker.Item label="RSK Mainnet" value={30} />
                     <Picker.Item label="RSK Testnet" value={31} />
@@ -246,7 +259,7 @@ const App: () => React$Node = () => {
                   {
                     did0 && did1 && <Picker
                       selectedValue={selectedDid}
-                      onValueChange={(itemValue, itemIndex) => setSelectedDid(itemValue)}
+                      onValueChange={(itemValue, itemIndex) => updateSession(network, itemValue)}
                       enabled={network !== -1}
                     >
                       {selectedDid === -1 && <Picker.Item label='Choose an identity' value={-1} />}
